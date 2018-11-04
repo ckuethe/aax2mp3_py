@@ -105,7 +105,7 @@ def split_file(args, destdir, src, md):
         cmd = u' '.join(cmd)
         rv = os.system(cmd.encode('utf-8'))
         if rv == 0:
-            # os.unlink(src)
+            os.unlink(src)
             pass
     else:
         raise RuntimeError("Don't know how to split {}".format(args.container))
@@ -117,6 +117,7 @@ def extract_image(args, destdir, fn):
         os.unlink(output)
 
     if args.test or args.verbose:
+        print "extracting cover art"
         print u' '.join(cmd)
     if not args.test:
         x,y,z = os.popen3(cmd)
@@ -140,6 +141,7 @@ def convert_file(args, fn, md):
     destfn = fn.replace('.aax', '.{}'.format(codecs[args.container][1]))
     output = os.path.join(destdir, destfn)
     if os.path.exists(output) and args.overwrite:
+        print "removing transcoded file: {}".format(output)
         os.unlink(output)
 
     cmd = ['ffmpeg', '-loglevel', 'error', '-stats', '-activation_bytes', args.auth,
