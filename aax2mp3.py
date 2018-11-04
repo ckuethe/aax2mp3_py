@@ -71,6 +71,7 @@ def get_splitpoints(container, md):
 
 def probe_metadata(args, fn):
     if not os.path.exists(fn):
+        print "Derp! Input file does not exist!"
         return None
     cmd = ['ffprobe', '-v', 'error', '-activation_bytes', args.auth, '-i', fn, '-of', 'json', '-show_chapters', '-show_programs', '-show_format',]
 
@@ -93,16 +94,16 @@ def split_file(args, destdir, src, md):
     if args.container == 'mp3':
         cmd = [
             'mp3splt', '-T', '12', '-o', '"Chapter @n"',
-            '-g', '''"r%[@N=1,@a={},@b={},@y={},@t=Chapter @n,@g=183]"'''.format(t['artist'], t['title'], t['date']),
-            '-d', '"{}"'.format(destdir),
-            '"{}"'.format(src),
-            ' '.join(splitpoints)]
+            '-g', u'''"r%[@N=1,@a={},@b={},@y={},@t=Chapter @n,@g=183]"'''.format(t['artist'], t['title'], t['date']),
+            '-d', u'"{}"'.format(destdir),
+            u'"{}"'.format(src),
+            u' '.join(splitpoints)]
         if args.verbose or args.test:
             print cmd
             if args.test:
                 return
         cmd = u' '.join(cmd)
-        rv = os.system(cmd)
+        rv = os.system(cmd.encode('utf-8'))
         if rv == 0:
             # os.unlink(src)
             pass
@@ -111,7 +112,7 @@ def split_file(args, destdir, src, md):
 
 def extract_image(args, destdir, fn):
     output = os.path.join(destdir, 'cover.jpg')
-    cmd = ['ffmpeg', '-loglevel', 'error', '-stats', '-activation_bytes', args.auth, '-n', '-i', fn, '-an', '-codec:v', 'copy', '"{}"'.format(output)]
+    cmd = ['ffmpeg', '-loglevel', 'error', '-stats', '-activation_bytes', args.auth, '-n', '-i', fn, '-an', '-codec:v', 'copy', u'{}'.format(output)]
     if os.path.exists(output) and args.overwrite:
         os.unlink(output)
 
@@ -133,6 +134,9 @@ def convert_file(args, fn, md):
 
     extract_image(args, destdir, fn)
 
+    if args.coverimage:
+        return
+
     destfn = fn.replace('.aax', '.{}'.format(codecs[args.container][1]))
     output = os.path.join(destdir, destfn)
     if os.path.exists(output) and args.overwrite:
@@ -142,15 +146,15 @@ def convert_file(args, fn, md):
         '-n', '-i', fn, '-vn',
         '-codec:a', codecs[args.container][0], '-ab', md['format']['bit_rate'],
         '-map_metadata', '-1',
-        '-metadata', 'title="{}"'.format(md['format']['tags']['title']),
-        '-metadata', 'artist="{}"'.format(md['format']['tags']['artist']),
-        '-metadata', 'album_artist="{}"'.format(md['format']['tags']['album_artist']),
-        '-metadata', 'album="{}"'.format(md['format']['tags']['album']),
-        '-metadata', 'date="{}"'.format(md['format']['tags']['date']),
-        '-metadata', 'genre="{}"'.format(md['format']['tags']['genre']),
+        '-metadata', u'title="{}"'.format(md['format']['tags']['title']),
+        '-metadata', u'artist="{}"'.format(md['format']['tags']['artist']),
+        '-metadata', u'album_artist="{}"'.format(md['format']['tags']['album_artist']),
+        '-metadata', u'album="{}"'.format(md['format']['tags']['album']),
+        '-metadata', u'date="{}"'.format(md['format']['tags']['date']),
+        '-metadata', u'genre="{}"'.format(md['format']['tags']['genre']),
         '-metadata', u'copyright="{}"'.format(md['format']['tags']['copyright']),
         '-metadata', 'track="1/1"',
-        '"{}"'.format(output),
+        u'"{}"'.format(output),
     ]
     cmd = u' '.join(cmd)
     if args.test or args.verbose:
@@ -176,6 +180,7 @@ def main():
     ap.add_argument('-f', '--format', default='mp3', choices=codecs.keys(), dest='container', help='output format. Default: %(default)s')
     ap.add_argument('-o', '--outputdir', default='Audiobooks', dest='outdir', help='output directory. Default: %(default)s')
     ap.add_argument('-c', '--clobber', default=False, dest='overwrite', action='store_true', help='overwrite existing files')
+    ap.add_argument('-i', '--coverimage', default=False, dest='coverimage', action='store_true', help='only extract cover image')
     ap.add_argument('-s', '--single', default=False, dest='single', action='store_true', help="don't split into chapters")
     ap.add_argument('-t', '--test', default=False, dest='test', action='store_true', help='test input file(s)')
     ap.add_argument('-v', '--verbose', default=False, dest='verbose', action='store_true', help='extra verbose output')
