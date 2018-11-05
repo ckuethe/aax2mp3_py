@@ -7,6 +7,7 @@ import re
 import argparse
 from json import loads
 import time
+from unicodedata import normalize
 
 codecs = {  # codec, ext, container
     'mp3': ['libmp3lame', 'mp3', 'mp3'],
@@ -62,6 +63,7 @@ def get_chapters(args, md):
     return [x['tags']['title'] for x in md]
 
 def get_splitpoints(container, md):
+    '''figure out where mp3splt should split the file'''
     splitpoints = [float(x['start_time']) for x in md['chapters']]
     if container == 'mp3':
         splitpoints.append(md['chapters'][-1]['end_time']) # mp3splt needs to know the end of the split. it can't assume EOF
@@ -70,6 +72,10 @@ def get_splitpoints(container, md):
     return splitpoints
 
 def probe_metadata(args, fn):
+    '''
+    get file metadata, eg. chapters, titles, codecs. Recent version of ffprobe
+    can emit json which is ever so helpful
+    '''
     if not os.path.exists(fn):
         print "Derp! Input file does not exist!"
         return None
@@ -128,8 +134,17 @@ def extract_image(args, destdir, fn):
         z.close()
     return
 
+def sanitize(s):
+    '''replace any unsafe characters with underscores'''
+    s = normalize("NFKD", s).encode('ascii', 'ignore').replace("'", "").replace('"', '')
+    s = re.sub('[^a-zA-Z0-9._/-]', '_', s)
+    s = re.sub('_+', '_', s)
+    return s
+
 def convert_file(args, fn, md):
     destdir = os.path.join(args.outdir, md['format']['tags']['artist'], md['format']['tags']['title'])
+    destdir = sanitize(destdir)
+
     if not os.path.exists(destdir):
         os.makedirs(destdir)
 
