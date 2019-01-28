@@ -159,9 +159,15 @@ def convert_file(args, fn, md):
         print "removing transcoded file: {}".format(output)
         os.unlink(output)
 
+    ac = '2'
+    ab = md['format']['bit_rate']
+    if args.mono:
+        ac = '1'
+        ab = str(int(ab) / 2)
+
     cmd = ['ffmpeg', '-loglevel', 'error', '-stats', '-activation_bytes', args.auth,
         '-n', '-i', fn, '-vn',
-        '-codec:a', codecs[args.container][0], '-ab', md['format']['bit_rate'],
+        '-codec:a', codecs[args.container][0], '-ab', ab, '-ac', ac,
         '-map_metadata', '-1',
         '-metadata', u'title="{}"'.format(md['format']['tags']['title']),
         '-metadata', u'artist="{}"'.format(md['format']['tags']['artist']),
@@ -193,11 +199,14 @@ def convert_file(args, fn, md):
 
 def main():
     ap = argparse.ArgumentParser()
+    # arbitrary parameters
     ap.add_argument('-a', '--authcode', default=None, dest='auth', help='Authorization Bytes')
     ap.add_argument('-f', '--format', default='mp3', choices=codecs.keys(), dest='container', help='output format. Default: %(default)s')
     ap.add_argument('-o', '--outputdir', default='Audiobooks', dest='outdir', help='output directory. Default: %(default)s')
+    # binary flags
     ap.add_argument('-c', '--clobber', default=False, dest='overwrite', action='store_true', help='overwrite existing files')
     ap.add_argument('-i', '--coverimage', default=False, dest='coverimage', action='store_true', help='only extract cover image')
+    ap.add_argument('-m', '--mono', default=False, dest='mono', action='store_true', help="downmix to mono")
     ap.add_argument('-s', '--single', default=False, dest='single', action='store_true', help="don't split into chapters")
     ap.add_argument('-t', '--test', default=False, dest='test', action='store_true', help='test input file(s)')
     ap.add_argument('-v', '--verbose', default=False, dest='verbose', action='store_true', help='extra verbose output')
