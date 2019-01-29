@@ -170,6 +170,11 @@ def convert_file(args, fn, md):
     if args.coverimage:
         return
 
+    if 'Chapter ' in str(os.listdir(destdir)):
+        if args.verbose:
+            print 'Already processed {}'.format(fn)
+        return
+
     destfn = fn.replace('.aax', '.{}'.format(codecs[args.container][1]))
     output = os.path.join(destdir, destfn)
     if os.path.exists(output) and args.overwrite:
