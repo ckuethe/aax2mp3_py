@@ -8,8 +8,8 @@ An advantage this script has over the original is that it uses [mp3splt](https:/
 ### Usage
 
 ```
-usage: aax2mp3.py [-h] [-a AUTH] [-f {mp3}] [-o OUTDIR] [-c] [-s] [-t] [-v]
-                  input [input ...]
+usage: aax2mp3 [-h] [-a AUTH] [-f {mp3}] [-o OUTDIR] [-p PROCESSES] [-c] [-i]
+               [-m] [-s] [-t] [-v] input [input ...]
 
 positional arguments:
   input
@@ -22,10 +22,16 @@ optional arguments:
                         output format. Default: mp3
   -o OUTDIR, --outputdir OUTDIR
                         output directory. Default: Audiobooks
+  -p PROCESSES, --processes PROCESSES
+                        number of parallel transcoder processes to run.
+                        Default: 1
   -c, --clobber         overwrite existing files
+  -i, --coverimage      only extract cover image
+  -m, --mono            downmix to mono
   -s, --single          don't split into chapters
   -t, --test            test input file(s)
   -v, --verbose         extra verbose output
+
 ```
 
 ### To Do
