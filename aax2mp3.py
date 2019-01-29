@@ -8,6 +8,18 @@ import argparse
 from json import loads
 import time
 from unicodedata import normalize
+try:
+    import multiprocessing
+except ImportError:
+    multiprocessing = None
+
+try:
+    from setproctitle import setproctitle
+except ImportError:
+    def setproctitle(x):
+        pass
+
+args = None
 
 codecs = {  # codec, ext, container
     'mp3': ['libmp3lame', 'mp3', 'mp3'],
@@ -197,12 +209,20 @@ def convert_file(args, fn, md):
     split_file(args, destdir, output, md)
 
 
+def process_wrapper(fn):
+    global args
+    setproctitle("transcode {}".format(fn))
+    md = probe_metadata(args, fn)
+    convert_file(args, fn, md)
+
 def main():
+    global args
     ap = argparse.ArgumentParser()
     # arbitrary parameters
     ap.add_argument('-a', '--authcode', default=None, dest='auth', help='Authorization Bytes')
     ap.add_argument('-f', '--format', default='mp3', choices=codecs.keys(), dest='container', help='output format. Default: %(default)s')
     ap.add_argument('-o', '--outputdir', default='Audiobooks', dest='outdir', help='output directory. Default: %(default)s')
+    ap.add_argument('-p', '--processes', default=1, type=int, dest='processes', help='number of parallel transcoder processes to run. Default: %(default)d')
     # binary flags
     ap.add_argument('-c', '--clobber', default=False, dest='overwrite', action='store_true', help='overwrite existing files')
     ap.add_argument('-i', '--coverimage', default=False, dest='coverimage', action='store_true', help='only extract cover image')
@@ -224,9 +244,20 @@ def main():
     if something_is_wrong:
         exit(1)
 
-    for fn in args.input:
-        md = probe_metadata(args, fn)
-        convert_file(args, fn, md)
+    if args.mono:
+        args.outdir += '-mono'
+
+    if multiprocessing is None:
+        args.processes = 1
+
+    if args.processes < 2:
+        for fn in args.input:
+            process_wrapper(fn)
+    else:
+        proc_pool = multiprocessing.Pool(processes=args.processes, maxtasksperchild=1)
+        setproctitle("transcode_dispatcher")
+        proc_pool.map(process_wrapper, args.input, chunksize=1)
+
 
 if __name__ == '__main__':
     main()
