@@ -154,7 +154,12 @@ def sanitize(s):
     return s
 
 def convert_file(args, fn, md):
-    destdir = os.path.join(args.outdir, md['format']['tags']['artist'], md['format']['tags']['title'])
+    destdir = None
+    try:
+        destdir = os.path.join(args.outdir, md['format']['tags']['artist'], md['format']['tags']['title'])
+    except KeyError:
+        print 'Metadata Error in {}'.format('fn')
+        return
     destdir = sanitize(destdir)
 
     if not os.path.exists(destdir):
