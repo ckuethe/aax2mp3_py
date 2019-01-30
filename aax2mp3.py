@@ -158,7 +158,7 @@ def convert_file(args, fn, md):
     try:
         destdir = os.path.join(args.outdir, md['format']['tags']['artist'], md['format']['tags']['title'])
     except KeyError:
-        print 'Metadata Error in {}'.format('fn')
+        print 'Metadata Error in {}'.format(fn)
         return
     destdir = sanitize(destdir)
 
