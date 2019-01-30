@@ -6,6 +6,7 @@ import os
 import re
 import argparse
 from json import loads
+from json import dump as jdump
 import time
 from unicodedata import normalize
 try:
@@ -165,6 +166,12 @@ def convert_file(args, fn, md):
     if not os.path.exists(destdir):
         os.makedirs(destdir)
 
+    with open('{}/metadata.json'.format(destdir), 'w') as fd:
+        jdump(md, fd, sort_keys=True, indent=4, separators=(',', ': '))
+
+    if args.metadata:
+        return
+
     extract_image(args, destdir, fn)
 
     if args.coverimage:
@@ -240,6 +247,7 @@ def main():
     ap.add_argument('-s', '--single', default=False, dest='single', action='store_true', help="don't split into chapters")
     ap.add_argument('-t', '--test', default=False, dest='test', action='store_true', help='test input file(s)')
     ap.add_argument('-v', '--verbose', default=False, dest='verbose', action='store_true', help='extra verbose output')
+    ap.add_argument('-x', '--extract-metadata', default=False, dest='metadata', action='store_true', help='only extract metadata')
 
     ap.add_argument(nargs='+', dest='input')
     args = ap.parse_args()
