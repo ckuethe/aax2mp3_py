@@ -276,6 +276,7 @@ def main():
         setproctitle("transcode_dispatcher")
         proc_pool.map(process_wrapper, args.input, chunksize=1)
 
+    os.system('stty echo')
 
 if __name__ == '__main__':
     main()
