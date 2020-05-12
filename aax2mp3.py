@@ -3,6 +3,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+from subprocess import check_output
 import re
 import argparse
 from json import loads
@@ -47,22 +48,19 @@ def check_missing_authcode(args):
             with open(f) as fd:
                 args.auth = fd.read().strip()
                 return False
-    print 'authcode not found in ".authcode", "~/.authcode", "$AUTHCODE", or the command line'
+    print('authcode not found in ".authcode", "~/.authcode", "$AUTHCODE", or the command line')
     return True
 
 def missing_required_programs():
     '''ensure that various dependencies are available'''
     error = False
     required = ['ffmpeg', 'ffprobe', 'mp3splt']
-    reqstr = ' '.join(required)
-    found = None
-    with os.popen('which {}'.format(reqstr)) as fd:
-        found = fd.read() # .split()
+    found = check_output(['which'] + required).decode('utf-8')
 
     for p in required:
         if p not in found:
             error = True
-            print 'missing dependency - {}'.format(p)
+            print('missing dependency - {}'.format(p))
     return error
 
 def numfix(n):
@@ -90,15 +88,12 @@ def probe_metadata(args, fn):
     can emit json which is ever so helpful
     '''
     if not os.path.exists(fn):
-        print "Derp! Input file does not exist!"
+        print("Derp! Input file does not exist!")
         return None
     cmd = ['ffprobe', '-v', 'error', '-activation_bytes', args.auth, '-i', fn, '-of', 'json', '-show_chapters', '-show_programs', '-show_format',]
 
-    fdi, fdo, fde = os.popen3(cmd)
-    buf = fdo.read()
-    fdo.close()
-    fde.close()
-    fdi.close()
+
+    buf = check_output(cmd).decode('utf-8')
 
     buf = re.sub('\s*[(](Una|A)bridged[)]', '', buf)  # I don't care about abridged or not
     buf = re.sub('\s+', ' ', buf)  # squish all whitespace runs
@@ -118,7 +113,7 @@ def split_file(args, destdir, src, md):
             u'"{}"'.format(src),
             u' '.join(splitpoints)]
         if args.verbose or args.test:
-            print cmd
+            print(cmd)
             if args.test:
                 return
         cmd = u' '.join(cmd)
@@ -136,20 +131,19 @@ def extract_image(args, destdir, fn):
         os.unlink(output)
 
     if args.test or args.verbose:
-        print "extracting cover art"
-        print u' '.join(cmd)
+        print("extracting cover art")
+        print(u' '.join(cmd))
     if not args.test:
-        x,y,z = os.popen3(cmd)
-        x.close()
-        y.read()
-        z.read()
-        y.close()
-        z.close()
+        buf = check_output(cmd)
     return
 
 def sanitize(s):
     '''replace any unsafe characters with underscores'''
-    s = normalize("NFKD", s).encode('ascii', 'ignore').replace("'", "").replace('"', '')
+    s = normalize("NFKD", s)
+    s = s.encode('ascii', 'ignore').decode('ascii', 'ignore')
+    s = s.replace("'", "").replace('"', '')
+    #s = .encode('ascii', 'ignore')).replace("'", "").replace('"', '')
+    #s = normalize("NFKD", s).encode('ascii', 'ignore')).replace("'", "").replace('"', '')
     s = re.sub('[^a-zA-Z0-9._/-]', '_', s)
     s = re.sub('_+', '_', s)
     return s
@@ -157,9 +151,9 @@ def sanitize(s):
 def convert_file(args, fn, md):
     destdir = None
     try:
-        destdir = os.path.join(args.outdir, md['format']['tags']['artist'], md['format']['tags']['title'])
+        destdir = os.path.join(args.outdir, md['format']['tags']['artist'], md['format']['tags']['title'].replace('/','-'))
     except KeyError:
-        print 'Metadata Error in {}'.format(fn)
+        print('Metadata Error in {}'.format(fn))
         return
     destdir = sanitize(destdir)
 
@@ -179,13 +173,13 @@ def convert_file(args, fn, md):
 
     if 'Chapter ' in str(os.listdir(destdir)):
         if args.verbose:
-            print 'Already processed {}'.format(fn)
+            print('Already processed {}'.format(fn))
         return
 
     destfn = fn.replace('.aax', '.{}'.format(codecs[args.container][1]))
     output = os.path.join(destdir, destfn)
     if os.path.exists(output) and args.overwrite:
-        print "removing transcoded file: {}".format(output)
+        print("removing transcoded file: {}".format(output))
         os.unlink(output)
 
     ac = '2'
@@ -210,8 +204,8 @@ def convert_file(args, fn, md):
     ]
     cmd = u' '.join(cmd)
     if args.test or args.verbose:
-        print cmd
-        print "splitpoints:", get_splitpoints(args, md)
+        print(cmd)
+        print("splitpoints:", get_splitpoints(args, md))
         if args.test:
             return split_file(args, destdir, output, md)
 
@@ -219,7 +213,7 @@ def convert_file(args, fn, md):
     os.system(cmd.encode('utf-8'))
     t = time.time() - t
     if args.verbose:
-        print "transcoding time: {:0.2f}s".format(t)
+        print("transcoding time: {:0.2f}s".format(t))
     if args.single == True:
         return
 
