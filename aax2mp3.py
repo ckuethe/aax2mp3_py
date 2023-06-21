@@ -65,7 +65,7 @@ def missing_required_programs():
     for p in required:
         if p not in found:
             error = True
-            print("missing dependency - {}".format(p))
+            print(f"missing dependency - {p}")
     return error
 
 
@@ -74,7 +74,7 @@ def numfix(n):
     n = float(n)
     m = int(n / 60)
     s = n - (m * 60)
-    return "{}.{:.2f}".format(m, s)
+    return f"{m}.{s:.2f}"
 
 
 def get_chapters(args, md):
@@ -139,8 +139,8 @@ def split_file(args, destdir, src, md):
             "-g",
             '''"r%[@N=1,@a={},@b={},@y={},@t=Chapter @n,@g=183]"'''.format(t["artist"], t["title"], t["date"]),
             "-d",
-            '"{}"'.format(destdir),
-            '"{}"'.format(src),
+            f'"{destdir}"',
+            f'"{src}"',
             " ".join(splitpoints),
         ]
         if args.verbose or args.test:
@@ -153,7 +153,7 @@ def split_file(args, destdir, src, md):
             os.unlink(src)
             pass
     else:
-        raise RuntimeError("Don't know how to split {}".format(args.container))
+        raise RuntimeError(f"Don't know how to split {args.container}")
 
 
 def extract_image(args, destdir, fn):
@@ -171,7 +171,7 @@ def extract_image(args, destdir, fn):
         "-an",
         "-codec:v",
         "copy",
-        "{}".format(output),
+        f"{output}",
     ]
     if os.path.exists(output) and args.overwrite:
         os.unlink(output)
@@ -203,7 +203,7 @@ def convert_file(args, fn, md):
             args.outdir, md["format"]["tags"]["artist"], md["format"]["tags"]["title"].replace("/", "-")
         )
     except KeyError:
-        print("Metadata Error in {}".format(fn))
+        print(f"Metadata Error in {fn}")
         return
     destdir = sanitize(destdir)
 
@@ -212,7 +212,7 @@ def convert_file(args, fn, md):
 
     # XXX figure out how to hook up decrypt-only, eg:
     # XXX ffmpeg -activation_bytes $AUTHCODE -i input.aax -c:a copy -vn -f mp4 output.mp4
-    with open("{}/metadata.json".format(destdir), "w") as fd:
+    with open(f"{destdir}/metadata.json", "w") as fd:
         jdump(md, fd, sort_keys=True, indent=4, separators=(",", ": "))
 
     if args.metadata:
@@ -228,13 +228,13 @@ def convert_file(args, fn, md):
 
     if "Chapter " in str(os.listdir(destdir)):
         if args.verbose:
-            print("Already processed {}".format(fn))
+            print(f"Already processed {fn}")
         return
 
-    destfn = fn.replace(".aax", ".{}".format(codecs[args.container][1]))
+    destfn = fn.replace(".aax", f".{codecs[args.container][1]}")
     output = os.path.join(destdir, destfn)
     if os.path.exists(output) and args.overwrite:
-        print("removing transcoded file: {}".format(output))
+        print(f"removing transcoded file: {output}")
         os.unlink(output)
 
     ac = "2"
@@ -291,7 +291,7 @@ def convert_file(args, fn, md):
     os.system(cmd.encode("utf-8"))
     t = time.time() - t
     if args.verbose:
-        print("transcoding time: {:0.2f}s".format(t))
+        print(f"transcoding time: {t:0.2f}s")
     if args.single == True:
         return
 
@@ -300,7 +300,7 @@ def convert_file(args, fn, md):
 
 def process_wrapper(fn):
     global args
-    setproctitle("transcode {}".format(fn))
+    setproctitle(f"transcode {fn}")
     md = None
     try:
         md = probe_metadata(args, fn)
